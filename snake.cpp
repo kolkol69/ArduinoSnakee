@@ -172,6 +172,7 @@ void calculateSnake() {
   }
 
   // if there is any age (snake body), this will cause the end of the game (snake must be moving)
+  // (snake 'eats' itself)
   if (age[snake.row][snake.col] != 0 && snakeDirection != 0) {
     gameOver = true;
     return;
@@ -205,6 +206,7 @@ void fixEdge() {
 
 
 // increment ages if all lit leds, turn off too old ones depending on the length of the snake
+// this way we can be safe that snake would have 5 leds on if it is 5 block size
 void updateAges() {
   for (int row = 0; row < 8; row++) {
     for (int col = 0; col < 8; col++) {
@@ -292,10 +294,11 @@ void initialize() {
   snakeSpeed = 500;
 }
 
-// --------------------------------------------------------------- //
-// -------------------------- messages --------------------------- //
-// --------------------------------------------------------------- //
-
+/*
+ * ==========================================================
+ * =======================MESSAGES===========================
+ * ==========================================================
+ */
 
 const PROGMEM bool snakeMsg[8][56] = {
   //SNAKE
