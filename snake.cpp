@@ -226,8 +226,7 @@ void updateAges() {
 void handleGameStates() {
   if (gameOver || win) {
     unrollSnake();
-
-    showScoreMsg(snakeLength-3);
+    showScoreMsg(snakeLength-initialSnakeLength);
 
     if (gameOver) showGameOverMsg();
     else if (win) showWinMessage();
@@ -253,7 +252,7 @@ void unrollSnake() {
   matrix.setLed(0, food.row, food.col, 0);
 
   delay(600);
-
+  // snake death "animation"
   for (int i = 1; i <= snakeLength; i++) {
     for (int row = 0; row < 8; row++) {
       for (int col = 0; col < 8; col++) {
@@ -287,6 +286,7 @@ void initialize() {
   matrix.clearDisplay(0);
 
   randomSeed(analogRead(A5));
+  // at the beggining snake appears randomly on the matrix
   snake.row = random(8);
   snake.col = random(8);
   snakeSpeed = 500;
@@ -421,11 +421,12 @@ void showWinMessage() {
 
 // shows the 'score' message with numbers scrolling around the matrix
 void showScoreMsg(int score) {
+  //works only for two digits, but its fine because the max score is 64
   if (score < 0 || score > 99) return;
 
   // specify score digits
-  int second = score % 10;
-  int first = (score / 10) % 10;
+  int second = score % 10; // for '12' we will got '2'
+  int first = (score / 10) % 10; // for '12' we will get '1'
 
   for (int d = 0; d < sizeof(scoreMsg[0]) + 2 * sizeof(digits[0][0]); d++) {
     for (int col = 0; col < 8; col++) {
