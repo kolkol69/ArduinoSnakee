@@ -1,6 +1,5 @@
 #include "LedControl.h" // LedControl library is used for controlling a LED matrix. Find it using Library Manager or download zip here: https://github.com/wayoda/LedControl
 
-
 /*
  * ==========================================================
  * ======================INITIAL CONFIG======================
