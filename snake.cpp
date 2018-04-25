@@ -1,21 +1,23 @@
 #include "LedControl.h" // LedControl library is used for controlling a LED matrix. Find it using Library Manager or download zip here: https://github.com/wayoda/LedControl
 
 
-// --------------------------------------------------------------- //
-// ------------------------- user config ------------------------- //
-// --------------------------------------------------------------- //
+/*
+ * ==========================================================
+ * ======================INITIAL CONFIG======================
+ * ==========================================================
+ */
 
 // there are defined all the pins
 struct Pin {
-  static const short joystickX = A0;   // joystick X axis pin
-  static const short joystickY = A1;   // joystick Y axis pin
+  static const short joystickX = A0;   // joystick X axis
+  static const short joystickY = A1;   // joystick Y axis
   static const short CLK = 10;   // clock for LED matrix
   static const short CS  = 11;  // chip-select for LED matrix
   static const short DIN = 12; // data-in for LED matrix
 };
 
-// LED matrix brightness: between 0(darkest) and 15(brightest)
-const short intensity = 8;
+// LED matrix brightness: between 0(the darkest) and 15( the brightest )
+const short led_brightness = 10;
 
 // lower = faster message scrolling
 const short messageSpeed = 5;
@@ -27,8 +29,8 @@ const short initialSnakeLength = 3;
 void setup() {
   Serial.begin(115200);  // set the same baud rate on your Serial Monitor
   initialize();         // initialize pins & LED matrix
-  calibrateJoystick(); // calibrate the joystick home (do not touch it)
-  showSnakeMessage(); // scrolls the 'snake' message around the matrix
+  calibrateJoystick(); // calibrate the joystick home 
+  showWelcomeMsg(); // scrolls the 'snake' message around the matrix
 }
 
 
@@ -36,13 +38,14 @@ void loop() {
   generateFood();    // if there is no food, generate one
   scanJoystick();    // watches joystick movements & blinks with food
   calculateSnake();  // calculates snake parameters
-  handleGameStates();
+  handleGameStates(); // check for win\loose
 }
 
-// --------------------------------------------------------------- //
-// -------------------- supporting variables --------------------- //
-// --------------------------------------------------------------- //
-
+/*
+ * ==========================================================
+ * =================SOME ADDITIONAL VARIABLES================
+ * ==========================================================
+ */
 LedControl matrix(Pin::DIN, Pin::CLK, Pin::CS, 1);
 
 struct Point {
@@ -68,8 +71,8 @@ Point food(-1, -1);
 Coordinate joystickHome(500, 500);
 
 // snake parameters
-int snakeLength = initialSnakeLength; // choosed by the user in the config section
-int snakeSpeed = 500;
+int snakeLength = initialSnakeLength;
+int snakeSpeed = 500; // the bigger number the slower snake moves
 int snakeDirection = 0; // if it is 0, the snake does not move
 
 // direction constants
@@ -85,27 +88,33 @@ const int joystickThreshold = 160;
 // on every frame, the age of all lit pixels is incremented.
 // when the age of some pixel exceeds the length of the snake, it goes out.
 // age 1 is added in the current snake direction next to the last position of the snake head.
+// This way we can controll the "movement"" effect of the snake. When its moving left
+// every pixel is incrementing and changing position, the first one becomes +1 and 
+// starts to glow and the last one is no more glowing, so it looks like
+// snake moved one pixel to the left 
 int age[8][8] = {};
 
-// --------------------------------------------------------------- //
-// -------------------------- functions -------------------------- //
-// --------------------------------------------------------------- //
 
-
+/*
+ * ==========================================================
+ * ===================FUNCTION DECLARATION===================
+ * ==========================================================
+ */
 // if there is no food, generate one, also check for victory
 void generateFood() {
   if (food.row == -1 || food.col == -1) {
     // self-explanatory
     if (snakeLength >= 64) {
       win = true;
-      return; // prevent the food generator from running, in this case it would run forever, because it will not be able to find a pixel without a snake
+      // prevent the food generator from running, in this case it would run forever, because it will not be able to find a pixel without a snake
+      return; 
     }
 
     // generate food until it is in the right position
     do {
       food.col = random(8);
       food.row = random(8);
-    } while (age[food.row][food.col] > 0);
+    } while (age[food.row][food.col] > 0);// check if there food is not generating on top of the snake's body
   }
 }
 
@@ -171,8 +180,10 @@ void calculateSnake() {
   // check if the food was eaten
   if (snake.row == food.row && snake.col == food.col) {
     snakeLength++;
-    snakeSpeed > 100 ? snakeSpeed = snakeSpeed - 10 : 100; // make game more interesting and harder to play. Speeding up the snake:)
-    food.row = -1; // reset food
+    // make game more interesting and harder to play. Speeding up the snake everytime you eat food:)
+    snakeSpeed > 100 ? snakeSpeed = snakeSpeed - 10 : 100;
+    // reset food 
+    food.row = -1; 
     food.col = -1;
   }
 
@@ -216,9 +227,9 @@ void handleGameStates() {
   if (gameOver || win) {
     unrollSnake();
 
-    showScoreMessage(snakeLength-3);
+    showScoreMsg(snakeLength-3);
 
-    if (gameOver) showGameOverMessage();
+    if (gameOver) showGameOverMsg();
     else if (win) showWinMessage();
 
     // re-init the game
@@ -272,7 +283,7 @@ void calibrateJoystick() {
 
 void initialize() {
   matrix.shutdown(0, false);
-  matrix.setIntensity(0, intensity);
+  matrix.setIntensity(0, led_brightness);
   matrix.clearDisplay(0);
 
   randomSeed(analogRead(A5));
@@ -286,18 +297,20 @@ void initialize() {
 // --------------------------------------------------------------- //
 
 
-const PROGMEM bool snejkMessage[8][56] = {
+const PROGMEM bool snakeMsg[8][56] = {
+  //SNAKE
   {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-  {0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,0,0,0,1,1,0,0,1,1,1,1,1,1,0,0,0,0,1,1,1,1,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0},
-  {0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,1,1,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,1,1,0,0,0,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0},
-  {0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,1,1,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,1,1,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0},
-  {0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,0,1,1,1,1,0,0,1,1,1,1,1,0,0,0,0,0,0,1,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0},
-  {0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,1,1,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0},
-  {0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0},
-  {0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,0,0,0,1,1,0,0,1,1,1,1,1,1,0,0,0,1,1,1,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0}
+  {0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,1,1,1,0,0,0,1,1,0,0,1,1,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,1,1,0,0,1,1,0,0,1,1,0,0,0,1,1,0,0,1,1,0,1,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,1,1,0,1,1,0,0,1,1,0,0,0,1,1,0,0,1,1,1,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,0,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,1,1,0,0,1,1,0,0,0,1,1,0,0,1,1,1,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,1,1,0,0,1,1,0,0,0,1,1,0,0,1,1,0,1,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,0,0,0,1,1,0,0,1,1,0,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0}
 };
 
-const PROGMEM bool gameOverMessage[8][90] = {
+const PROGMEM bool gameOverMsg[8][90] = {
+  // GAME OVER !
   {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
   {0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,1,1,0,0,0,1,1,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,0,0,1,1,0,0,1,1,1,1,1,1,0,0,1,1,1,1,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0},
   {0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,1,0,1,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,1,1,1,0,0,0,0,0,0,0,0},
@@ -308,7 +321,20 @@ const PROGMEM bool gameOverMessage[8][90] = {
   {0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,1,1,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,1,1,0,0,0,0,1,1,1,1,1,1,0,0,1,1,0,0,1,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0}
 };
 
-const PROGMEM bool scoreMessage[8][58] = {
+const PROGMEM bool winnerMsg[8][66] = {
+  // WINNER !!!
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,1,1,0,0,1,1,0,0,0,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,0,0,0,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0,0,0},
+  {0,0,1,1,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,1,1,1,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0,0,0},
+  {0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,1,1,1,1,0,1,1,0,0,1,1,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0,0,0},
+  {0,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1,0,1,1,1,1,0,0,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,0,0,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0,0,0},
+  {0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,1,1,0,0,1,1,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,0,1,1,0,0,0,1,0,0,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,0,0,0,1,1,0,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0,0,0}
+};
+
+const PROGMEM bool scoreMsg[8][58] = {
+  // SCORE:
   {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
   {0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,1,1,1,1,1,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0},
   {0,0,0,0,0,0,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0},
@@ -321,159 +347,95 @@ const PROGMEM bool scoreMessage[8][58] = {
 
 const PROGMEM bool digits[][8][8] = {
   {
-    {0,0,0,0,0,0,0,0},
-    {0,0,1,1,1,1,0,0},
-    {0,1,1,0,0,1,1,0},
-    {0,1,1,0,1,1,1,0},
-    {0,1,1,1,0,1,1,0},
-    {0,1,1,0,0,1,1,0},
-    {0,1,1,0,0,1,1,0},
-    {0,0,1,1,1,1,0,0}
-  },
-  {
-    {0,0,0,0,0,0,0,0},
-    {0,0,0,1,1,0,0,0},
-    {0,0,0,1,1,0,0,0},
-    {0,0,1,1,1,0,0,0},
-    {0,0,0,1,1,0,0,0},
-    {0,0,0,1,1,0,0,0},
-    {0,0,0,1,1,0,0,0},
-    {0,1,1,1,1,1,1,0}
-  },
-  {
-    {0,0,0,0,0,0,0,0},
-    {0,0,1,1,1,1,0,0},
-    {0,1,1,0,0,1,1,0},
-    {0,0,0,0,0,1,1,0},
-    {0,0,0,0,1,1,0,0},
-    {0,0,1,1,0,0,0,0},
-    {0,1,1,0,0,0,0,0},
-    {0,1,1,1,1,1,1,0}
-  },
-  {
-    {0,0,0,0,0,0,0,0},
-    {0,0,1,1,1,1,0,0},
-    {0,1,1,0,0,1,1,0},
-    {0,0,0,0,0,1,1,0},
-    {0,0,0,1,1,1,0,0},
-    {0,0,0,0,0,1,1,0},
-    {0,1,1,0,0,1,1,0},
-    {0,0,1,1,1,1,0,0}
-  },
-  {
-    {0,0,0,0,0,0,0,0},
-    {0,0,0,0,1,1,0,0},
-    {0,0,0,1,1,1,0,0},
-    {0,0,1,0,1,1,0,0},
-    {0,1,0,0,1,1,0,0},
-    {0,1,1,1,1,1,1,0},
-    {0,0,0,0,1,1,0,0},
-    {0,0,0,0,1,1,0,0}
-  },
-  {
-    {0,0,0,0,0,0,0,0},
-    {0,1,1,1,1,1,1,0},
-    {0,1,1,0,0,0,0,0},
-    {0,1,1,1,1,1,0,0},
-    {0,0,0,0,0,1,1,0},
-    {0,0,0,0,0,1,1,0},
-    {0,1,1,0,0,1,1,0},
-    {0,0,1,1,1,1,0,0}
-  },
-  {
-    {0,0,0,0,0,0,0,0},
-    {0,0,1,1,1,1,0,0},
-    {0,1,1,0,0,1,1,0},
-    {0,1,1,0,0,0,0,0},
-    {0,1,1,1,1,1,0,0},
-    {0,1,1,0,0,1,1,0},
-    {0,1,1,0,0,1,1,0},
-    {0,0,1,1,1,1,0,0}
-  },
-  {
-    {0,0,0,0,0,0,0,0},
-    {0,1,1,1,1,1,1,0},
-    {0,1,1,0,0,1,1,0},
-    {0,0,0,0,1,1,0,0},
-    {0,0,0,0,1,1,0,0},
-    {0,0,0,1,1,0,0,0},
-    {0,0,0,1,1,0,0,0},
-    {0,0,0,1,1,0,0,0}
-  },
-  {
-    {0,0,0,0,0,0,0,0},
-    {0,0,1,1,1,1,0,0},
-    {0,1,1,0,0,1,1,0},
-    {0,1,1,0,0,1,1,0},
-    {0,0,1,1,1,1,0,0},
-    {0,1,1,0,0,1,1,0},
-    {0,1,1,0,0,1,1,0},
-    {0,0,1,1,1,1,0,0}
-  },
-  {
-    {0,0,0,0,0,0,0,0},
-    {0,0,1,1,1,1,0,0},
-    {0,1,1,0,0,1,1,0},
-    {0,1,1,0,0,1,1,0},
-    {0,0,1,1,1,1,1,0},
-    {0,0,0,0,0,1,1,0},
-    {0,1,1,0,0,1,1,0},
-    {0,0,1,1,1,1,0,0}
+    // zero
+    {0,0,0,0,0,0,0,0},{0,0,1,1,1,1,0,0},{0,1,1,0,0,1,1,0},{0,1,1,0,1,1,1,0},{0,1,1,1,0,1,1,0},{0,1,1,0,0,1,1,0},{0,1,1,0,0,1,1,0},{0,0,1,1,1,1,0,0}
+  },{
+    // one
+    {0,0,0,0,0,0,0,0},{0,0,0,1,1,0,0,0},{0,0,0,1,1,0,0,0},{0,0,1,1,1,0,0,0},{0,0,0,1,1,0,0,0},{0,0,0,1,1,0,0,0},{0,0,0,1,1,0,0,0},{0,1,1,1,1,1,1,0}
+  },{
+    // two 
+    {0,0,0,0,0,0,0,0},{0,0,1,1,1,1,0,0},{0,1,1,0,0,1,1,0},{0,0,0,0,0,1,1,0},{0,0,0,0,1,1,0,0},{0,0,1,1,0,0,0,0},{0,1,1,0,0,0,0,0},{0,1,1,1,1,1,1,0}
+  },{
+    // three
+    {0,0,0,0,0,0,0,0},{0,0,1,1,1,1,0,0},{0,1,1,0,0,1,1,0},{0,0,0,0,0,1,1,0},{0,0,0,1,1,1,0,0},{0,0,0,0,0,1,1,0},{0,1,1,0,0,1,1,0},{0,0,1,1,1,1,0,0}
+  },{
+    // four
+    {0,0,0,0,0,0,0,0},{0,0,0,0,1,1,0,0},{0,0,0,1,1,1,0,0},{0,0,1,0,1,1,0,0},{0,1,0,0,1,1,0,0},{0,1,1,1,1,1,1,0},{0,0,0,0,1,1,0,0},{0,0,0,0,1,1,0,0}
+  },{
+    // five
+    {0,0,0,0,0,0,0,0},{0,1,1,1,1,1,1,0},{0,1,1,0,0,0,0,0},{0,1,1,1,1,1,0,0},{0,0,0,0,0,1,1,0},{0,0,0,0,0,1,1,0},{0,1,1,0,0,1,1,0},{0,0,1,1,1,1,0,0}
+  },{
+    // six
+    {0,0,0,0,0,0,0,0},{0,0,1,1,1,1,0,0},{0,1,1,0,0,1,1,0},{0,1,1,0,0,0,0,0},{0,1,1,1,1,1,0,0},{0,1,1,0,0,1,1,0},{0,1,1,0,0,1,1,0},{0,0,1,1,1,1,0,0}
+  },{
+    // seven
+    {0,0,0,0,0,0,0,0},{0,1,1,1,1,1,1,0},{0,1,1,0,0,1,1,0},{0,0,0,0,1,1,0,0},{0,0,0,0,1,1,0,0},{0,0,0,1,1,0,0,0},{0,0,0,1,1,0,0,0},{0,0,0,1,1,0,0,0}
+  },{
+    // eight  
+    {0,0,0,0,0,0,0,0},{0,0,1,1,1,1,0,0},{0,1,1,0,0,1,1,0},{0,1,1,0,0,1,1,0},{0,0,1,1,1,1,0,0},{0,1,1,0,0,1,1,0},{0,1,1,0,0,1,1,0},{0,0,1,1,1,1,0,0}
+  },{
+    // nine
+    {0,0,0,0,0,0,0,0},{0,0,1,1,1,1,0,0},{0,1,1,0,0,1,1,0},{0,1,1,0,0,1,1,0},{0,0,1,1,1,1,1,0},{0,0,0,0,0,1,1,0},{0,1,1,0,0,1,1,0},{0,0,1,1,1,1,0,0}
   }
 };
 
 
-// scrolls the 'snake' message around the matrix
-void showSnakeMessage() {
-  for (int d = 0; d < sizeof(snejkMessage[0]) - 7; d++) {
+// shows the 'snake' message scrolling around the matrix
+void showWelcomeMsg() {
+  for (int d = 0; d < sizeof(snakeMsg[0]) - 7; d++) {
     for (int col = 0; col < 8; col++) {
       delay(messageSpeed);
       for (int row = 0; row < 8; row++) {
         // this reads the byte from the PROGMEM and displays it on the screen
-        matrix.setLed(0, row, col, pgm_read_byte(&(snejkMessage[row][col + d])));
+        matrix.setLed(0, row, col, pgm_read_byte(&(snakeMsg[row][col + d])));
       }
     }
   }
 }
 
-
-// scrolls the 'game over' message around the matrix
-void showGameOverMessage() {
-  for (int d = 0; d < sizeof(gameOverMessage[0]) - 7; d++) {
+// shows  the 'game over' message scrolling around the matrix
+void showGameOverMsg() {
+  for (int d = 0; d < sizeof(gameOverMsg[0]) - 7; d++) {
     for (int col = 0; col < 8; col++) {
       delay(messageSpeed);
       for (int row = 0; row < 8; row++) {
         // this reads the byte from the PROGMEM and displays it on the screen
-        matrix.setLed(0, row, col, pgm_read_byte(&(gameOverMessage[row][col + d])));
+        matrix.setLed(0, row, col, pgm_read_byte(&(gameOverMsg[row][col + d])));
       }
     }
   }
 }
 
-
-// scrolls the 'win' message around the matrix
+// shows the 'win' message scrolling around the matrix
 void showWinMessage() {
-  // not implemented yet // TODO: implement it
+  for (int d = 0; d < sizeof(winnerMsg[0]) - 7; d++) {
+    for (int col = 0; col < 8; col++) {
+      delay(messageSpeed);
+      for (int row = 0; row < 8; row++) {
+        // this reads the byte from the PROGMEM and displays it on the screen
+        matrix.setLed(0, row, col, pgm_read_byte(&(winnerMsg[row][col + d])));
+      }
+    }
+  }
 }
 
-
-// scrolls the 'score' message with numbers around the matrix
-void showScoreMessage(int score) {
+// shows the 'score' message with numbers scrolling around the matrix
+void showScoreMsg(int score) {
   if (score < 0 || score > 99) return;
 
   // specify score digits
   int second = score % 10;
   int first = (score / 10) % 10;
 
-  for (int d = 0; d < sizeof(scoreMessage[0]) + 2 * sizeof(digits[0][0]); d++) {
+  for (int d = 0; d < sizeof(scoreMsg[0]) + 2 * sizeof(digits[0][0]); d++) {
     for (int col = 0; col < 8; col++) {
       delay(messageSpeed);
       for (int row = 0; row < 8; row++) {
-        if (d <= sizeof(scoreMessage[0]) - 8) {
-          matrix.setLed(0, row, col, pgm_read_byte(&(scoreMessage[row][col + d])));
+        if (d <= sizeof(scoreMsg[0]) - 8) {
+          matrix.setLed(0, row, col, pgm_read_byte(&(scoreMsg[row][col + d])));
         }
 
-        int c = col + d - sizeof(scoreMessage[0]) + 6; // move 6 px in front of the previous message
+        int c = col + d - sizeof(scoreMsg[0]) + 6; // move 6 px in front of the previous message
 
         // if the score is < 10, shift out the first digit (zero)
         if (score < 10) c += 8;
@@ -489,10 +451,4 @@ void showScoreMessage(int score) {
       }
     }
   }
-}
-
-
-// standard map function, but with floats
-float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
